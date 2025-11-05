@@ -5,22 +5,49 @@ git config --global user.name "Sebastien"
 git config --global user.email"s.andres@hizkia.eu"
 git init
 git add .
-git commit -m "Initialisation du projet analyse de sentiment"
+git commit -m "Initialisation du projet de générateur d'image suivant la parole"
 ```
 
 ### Lié le dépôt local à GitHub
+
+Crée un Personal Access Token sur GitHub
+
+Aller sur https://github.com/settings/tokens
+
+Cliquer sur “Generate new token → Fine-grained token”.
+
+Donner un nom, par exemple : token-gen-image.
+
+Dans la section Repository access, choisir :
+
+✅ “Only select repositories” → choisir gen_image_from_speech
+
+Dans Permissions, cocher :
+
+✅ Contents → Read and write
+
+Cliquer sur Generate token.
+
+Copier le token car GitHub ne l’affiche qu’une seule fois.
+
+Utiliser le token lors du push suivant :
+
 ```
-git remote add origin https://github.com/sebo-hizkia/analyse-sentiment-api.git
 git branch -M main
+git remote add origin https://github.com/sebo-hizkia/gen_image_from_speech.git
 git push -u origin main
 ```
 
 ## Développement
 ### API
-Lancement de l'API : ```uvicorn sentiment_api:app --reload --port 9000```
+Lancement de l'API : ```uvicorn gen_image_api:app --reload --port 9000```
 
 Test de l'API via interface automatique : http://127.0.0.1:9000/docs
 
+Pour utiliser les modèles d'inférence Hugging Face, il faut créer un token via le lien : https://huggingface.co/settings/tokens
+
+Créer un Fine-grained token et autoriser l'inférence.
+
 ### Page web de test
-Lancement de l'application : ```streamlit run sentiment_streamlit.py```
+Lancement de l'application : ```streamlit run gen_image_steamlit.py```
 
