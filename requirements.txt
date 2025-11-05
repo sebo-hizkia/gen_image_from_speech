@@ -1,0 +1,11 @@
+transformers
+torch
+speechrecognition
+fastapi
+uvicorn
+streamlit
+requests
+pydantic
+loguru
+sounddevice
+scipy
