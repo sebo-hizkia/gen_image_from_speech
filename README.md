@@ -48,6 +48,12 @@ Pour utiliser les modèles d'inférence Hugging Face, il faut créer un token vi
 
 Créer un Fine-grained token et autoriser l'inférence.
 
+Variable d'environement utilisable par le programme :
+```
+LOCAL_MODEL = True ou False # Utilisation du model local (par défaut True) ou inférence sur serveur Hugging Face (nécessite du crédit) si False
+HF_TOKEN =  # Token Hugging Face
+```
+
 ### Page web de test
 Lancement de l'application : ```streamlit run gen_image_steamlit.py```
 

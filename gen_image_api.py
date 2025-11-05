@@ -7,8 +7,8 @@ import tempfile
 import torch
 import os
 from huggingface_hub import InferenceClient
+from diffusers import AutoPipelineForText2Image
 from io import BytesIO
-
 
 # Configuration du logger
 logger.add("logs/gen_image_api.log", rotation="100 MB", level="DEBUG")
@@ -17,15 +17,23 @@ logger.add("logs/gen_image_api.log", rotation="100 MB", level="DEBUG")
 app = FastAPI(title="API de génération d'images")
 
 # Device GPU ou CPU
-device = 0 if torch.cuda.is_available() else 1
+device = 0 if torch.cuda.is_available() else -1
 
 # Chargement du modèle Hugging Face (français) en local
-asr_pipeline = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-large-xlsr-53-french") # A tester : openai/whisper-small
+# modèles testés ok : "facebook/wav2vec2-large-xlsr-53-french" -> 12Go / performance moyenne
+asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-small") # openai/whisper-small semble meilleur que wav2vec2-large-xlsr-53-french, mais moins performant que openai/whisper-large-v3
+
+# Chargement modèle de génération d'image local
+dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+image_pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sd-turbo", torch_dtype=dtype).to("cuda" if torch.cuda.is_available() else "cpu")
 
 # Pour l'inférence via les serveurs Hugging Face
 HF_TOKEN = os.environ.get("HF_TOKEN")  # token stocké en variable d'environement
-client = InferenceClient(api_key=HF_TOKEN, provider="hf-inference")
 
+# Utilisation du model local (par défaut) ou inférence sur serveur Hugging Face (nécessite du crédit)
+LOCAL_MODEL = os.environ.get("LOCAL_MODEL") or True
+
+client = InferenceClient(api_key=HF_TOKEN, provider="hf-inference")
 
 
 # Route transcription audio -> texte
@@ -36,15 +44,14 @@ async def speech_to_text(file: UploadFile = File(...)):
     """
     try:
         logger.info(f"Fichier reçu : {file.filename}")
-
          # On passe par un fichier temporaire
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             content = await file.read()
             tmp.write(content)
             tmp_path = tmp.name
 
-        # Exécution du modèle Speech-to-Text en local si GPU ou via serveur Hugging Face (online) sinon
-        if device >= 0: # GPU disponible sur machine locale
+        # Exécution du modèle Speech-to-Text en local si GPU ou via serveur Hugging Face (online)
+        if LOCAL_MODEL: # Exécution sur machine locale
             logger.info("Utilisation du modèle local (wav2vec2)")
             result = asr_pipeline(tmp_path)
             transcription = result.get("text", "")
@@ -80,11 +87,14 @@ async def generate_image(req: PromptRequest):
 
         logger.info(f"Génération d'image pour le prompt : {prompt}")
 
-        # Génération via l’API Hugging Face (mode hébergé)
-        image = client.text_to_image(
-            prompt=prompt,
-            model="black-forest-labs/FLUX.1-dev"
-        )
+         # --- Mode local si GPU dispo ---
+        if image_pipeline is not None:
+            logger.info("Utilisation du modèle local (diffusers)")
+            image = image_pipeline(prompt, num_inference_steps=4, guidance_scale=0.5).images[0]
+        # --- Sinon via API Hugging Face ---
+        else:
+            # Génération via l’API Hugging Face (mode hébergé)
+            image = client.text_to_image(prompt=prompt, model="black-forest-labs/FLUX.1-dev")
 
         # Convertit l'image PIL en flux binaire
         buf = BytesIO()

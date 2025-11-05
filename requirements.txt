@@ -9,3 +9,4 @@ pydantic
 loguru
 sounddevice
 scipy
+diffusers
