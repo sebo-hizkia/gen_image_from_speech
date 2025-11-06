@@ -1,3 +1,16 @@
+## Configuration de l'environnement virtuel python
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+La bibliothèque Sounddevice nécessite la bibliothèque système PortAudio :
+```
+sudo apt update
+sudo apt install portaudio19-dev
+```
+
 ## Configuration du dépôt
 ### Initialisation du dépôt GIT local
 ```
@@ -39,6 +52,13 @@ git push -u origin main
 ```
 
 ## Développement
+### Dépendances
+Le modèle audio local s'appui sur FFMPEG
+```
+sudo apt update
+sudo apt install ffmpeg
+```
+
 ### API
 Lancement de l'API : ```uvicorn gen_image_api:app --reload --port 9000```
 

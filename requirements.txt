@@ -10,3 +10,4 @@ loguru
 sounddevice
 scipy
 diffusers
+python-multipart
